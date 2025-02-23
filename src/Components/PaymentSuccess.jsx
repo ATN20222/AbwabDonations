@@ -1,25 +1,54 @@
 import React, { useEffect, useState } from 'react';
 import Logo from "../Assets/Images/Logo.png";
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Check from '../Assets/Images/check-green.gif';
+import axios from 'axios';
 
 const PaymentSuccess = () => {
     const [urlParams, setUrlParams] = useState({});
     const [copied, setCopied] = useState(false);
     const [data, setData] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [searchParams] = useSearchParams();
+    const id = searchParams.get("merchantRefNumber");
 
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const extractedParams = {
-            "طريقة الدفع": params.get('paymentMethod'),
-            "حالة الطلب": params.get('orderStatus'),
-            "المبلغ": params.get('orderAmount'),
-            "كود التبرع": params.get('merchantRefNumber'),
-        };
-        setUrlParams(extractedParams);
-        setData(JSON.parse(localStorage.getItem('data')));
-
+        // setData(JSON.parse(localStorage.getItem('data')));
+        getData();
     }, []);
+
+    const getData = async () => {
+        try {
+            setLoading(true);
+
+            const response = await axios.post(`https://geeee.com/fawry-payment-status.php`, {
+                merchantRefNumber: id
+            });
+            // data.transactionId = response.data.transactionId;
+            // localStorage.setItem('data', JSON.stringify(data));
+            setData(response.data);
+            // console.log(data);
+            // window.location.href = `https://momknpay.alahlymomkn.com/plugin?invoiceId=${response.data.invoiceId}`
+            console.log(response);
+        }
+        catch (error) {
+            console.error("Error status with Alahly: ", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    // useEffect(() => {
+    //     const params = new URLSearchParams(window.location.search);
+    //     const extractedParams = {
+    //         "طريقة الدفع": params.get('paymentMethod'),
+    //         "حالة الطلب": params.get('orderStatus'),
+    //         "المبلغ": params.get('orderAmount'),
+    //         "كود التبرع": params.get('merchantRefNumber'),
+    //     };
+    //     setUrlParams(extractedParams);
+    //     setData(JSON.parse(localStorage.getItem('data')));
+
+    // }, []);
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text).then(() => {
@@ -27,6 +56,10 @@ const PaymentSuccess = () => {
             setTimeout(() => setCopied(false), 2000);
         }).catch(err => console.error('فشل النسخ:', err));
     };
+
+
+
+
 
     return (
         <div className="container mt-5">
@@ -45,13 +78,19 @@ const PaymentSuccess = () => {
             }}>
                 العودة الي الصفحة الرئيسية
             </Link>
-            {Object.keys(urlParams).length > 0 &&data&&Object.keys(data).length > 0 && (
+            {!loading ? data && Object.keys(data).length > 0 && (
                 <div className="row justify-content-center mt-3">
                     <div className="col-12 col-md-8">
                         <div className="card shadow-sm">
                             <div className="card-body">
                                 <h4 className="card-title">تفاصيل التبرع</h4>
                                 <table className="table table-bordered table-striped table-hover">
+                                    <thead className="thead-dark">
+                                        <tr>
+                                            <th>المعلومات</th>
+                                            <th>القيمة</th>
+                                        </tr>
+                                    </thead>
                                     <thead className="thead-dark">
                                         <tr>
                                             <th>المعلومات</th>
@@ -67,31 +106,47 @@ const PaymentSuccess = () => {
                                             <td>نوع التبرع</td>
                                             <td>{data.description}</td>
                                         </tr>
-                                        {Object.keys(urlParams).map((key) => (
-                                            urlParams[key] && (
-                                                <tr key={key}>
-                                                    <td>{key}</td>
-                                                    <td>
-                                                        {key === "كود التبرع" && (
-                                                            <button
-                                                                className="btn btn-link"
-                                                                onClick={() => copyToClipboard(urlParams[key])}>
-                                                                {copied ? 'تم النسخ' : '📋'}
-                                                            </button>
-                                                        )}
-                                                        {urlParams[key]}
-                                                    </td>
-                                                </tr>
-                                            )
-                                        ))}
+                                        <tr>
+                                            <td>طريقة الدفع</td>
+                                            <td>فوري</td>
+                                        </tr>
+                                        <tr>
+                                            <td>الحالة </td>
+                                            <td>{data.isPaid?"تم الدفع":"لم يتم الدفع"}</td>
+                                        </tr>
+                                        
+                                        <tr>
+                                            <td>الوقت</td>
+                                            <td>{data.date}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>المبلغ</td>
+                                            <td>{data.amount+" جنيه"}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>كود التبرع</td>
+                                            <td>
+                                                <button
+                                                    className="btn "
+                                                    onClick={() => copyToClipboard(data.transactionId)}>
+                                                    {copied ? 'تم النسخ' : '📋'}
+                                                </button>
+                                                {data.transactionId}
 
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
                 </div>
-            )}
+            ) :
+                <div className="container Center mt-5">
+
+                    <div className="loader"></div>
+                </div>
+            }
         </div>
     );
 };

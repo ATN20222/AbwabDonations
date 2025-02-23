@@ -87,7 +87,7 @@ function PaymentForm() {
     };
 
     const DonateWithFawry = async () => {
-       
+    
         try {
             setLoading(true);
             const data ={
@@ -99,8 +99,9 @@ function PaymentForm() {
                 "type":formData.category,
                 "sub_type":formData.subCategory
             }
+            
             const response = await axios.post("https://geeee.com/fawry-payment-api.php",data);
-            // console.log(response);
+            console.log(response);
             localStorage.setItem('data', JSON.stringify(data));
             window.location.href = response.data.url;
         } catch (error) {
